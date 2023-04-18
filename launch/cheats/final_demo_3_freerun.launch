@@ -1,0 +1,19 @@
+<launch>
+
+  <param name="wait_time"  type="int"   value="3"/>
+  <param name="ball_color"  type="string"   value="Green"/>
+  
+  <node name="robot_arduino" pkg="rosserial_python" type="serial_node.py" output="screen">
+
+    <param name="port"  type="string"   value="/dev/ttyACM0"/>
+    <param name="baud"  type="int"      value="57600"/>
+
+  </node>
+
+  <node name="goal_publisher_node" pkg="henry_drive_control" type="GoalPublisher.py" output="screen" />
+
+  <include file="$(find ball_tracking)/launch/rtabmap.launch" />
+  <include file="$(find henry_drive_control)/launch/move_henry.launch" />
+
+</launch>
+

@@ -1,0 +1,23 @@
+
+<!-- <?xml version="1.0"?> -->
+<launch>
+    <node name="serial_node" type="serial_node.py" pkg="rosserial_python">
+        <param name="port" type="string" value="/dev/ttyACM0"/>
+    </node>
+    <node name="chassis" type="DriveController.py" pkg="henry_chassis_controller">
+    </node>
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+        <param name="video_device" value="/dev/video0" />
+        <param name="pixel_format" value="yuyv" />
+        <!-- <param name="camera_frame_id" value="usb_cam" /> -->
+        <!-- <param name="io_method" value="mmap"/> -->
+    </node>
+    <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+        <remap from="image" to="/usb_cam/image_raw"/>
+        <param name="autosize" value="true" />
+    </node>   
+    <node name="joy" type="joy_node" pkg="joy">
+        <param name="dev" type="string" value="/dev/input/js0"/>
+        <param name="deadzone" value="0.1"/>
+    </node>
+</launch>

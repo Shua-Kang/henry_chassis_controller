@@ -1,0 +1,24 @@
+<launch>
+
+  <param name="wait_time"  type="int"   value="3"/>
+  <param name="ball_color"  type="string"   value="Green"/>
+  
+  <node name="robot_arduino" pkg="rosserial_python" type="serial_node.py" output="screen">
+
+    <param name="port"  type="string"   value="/dev/ttyACM0"/>
+    <!-- <param name="baud"  type="int"      value="57600"/> -->
+
+  </node>
+  <node name="joy" type="joy_node" pkg="joy">
+        <param name="dev" type="string" value="/dev/input/js0"/>
+        <param name="deadzone" value="0.1"/>
+  </node>
+
+  <node name="goal_publisher_node" pkg="henry_chassis_controller" type="GoalPublisher.py" output="screen" />
+
+  <include file="$(find henry_chassis_controller)/launch/rtabmap.launch" />
+  <include file="$(find henry_chassis_controller)/launch/move_henry.launch" />
+  <include file="$(find henry_chassis_controller)/launch/ar_track_435i.launch" />
+
+</launch>
+

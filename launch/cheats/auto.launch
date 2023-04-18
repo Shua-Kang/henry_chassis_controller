@@ -1,0 +1,29 @@
+<launch>
+
+
+    <!-- Launch the sensors -->
+	<include file="$(find leader_2dnav)/launch/sensors.launch" />
+
+    <!-- Launch RtabMap  -->
+	<include file="$(find rtabmap_ros)/launch/rtabmap.launch">
+        <arg name="localization" value="true" />
+        <arg name="database_path"          			value="~/leader.db"/>
+		<arg name="args"              				value="--Mem/UseOdomGravity true --Optimizer/GravitySigma 0.3" /> 
+		<arg name="odom_topic"                    	value="/t265/odom/sample" />
+		<arg name="frame_id"            			value="t265_link"/>
+		<arg name="rgbd_sync"                 		value="true" />
+		<arg name="depth_topic"                		value="/d400/aligned_depth_to_color/image_raw" />
+
+		<arg name="rgb_topic"                		value="/d400/color/image_raw"/>
+		<arg name="camera_info_topic"               value="/d400/color/camera_info"/>
+		<arg name="approx_rgbd_sync"           		value="false"/>
+		<arg name="visual_odometry"      			value="false"/>
+
+	</include>
+
+    <!-- Launch Nav-Stack a.k.a. MoveBase  -->
+    <include file="$(find leader_2dnav)/launch/course_navigation.launch"/>
+		
+    <!-- Load the configuration file in RViz  -->
+	<node type="rviz" name="rviz" pkg="rviz" args="-d $(find leader_2dnav)/rviz/navigation.rviz" />
+</launch>   

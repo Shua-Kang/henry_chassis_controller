@@ -1,0 +1,21 @@
+<launch>
+  <param name="ball_color"  type="string"   value="Yellow"/>
+  
+  <node name="robot_arduino" pkg="rosserial_python" type="serial_node.py" output="screen">
+
+    <param name="port"  type="string"   value="/dev/ttyACM0"/>
+    <param name="baud"  type="int"      value="57600"/>
+
+  </node>
+
+  <node name="sid_bull_node" pkg="henry_drive_control" type="sid_cmd.py" output="screen" />
+
+  <node name="joy" type="joy_node" pkg="joy">
+      <param name="dev" type="string" value="/dev/input/js0"/>
+      <param name="deadzone" value="0.1"/>
+  </node>
+
+  <include file="$(find ball_tracking)/launch/rtabmap.launch" />
+  <!-- <include file="$(find henry_drive_control)/launch/move_henry.launch" /> -->
+
+</launch>

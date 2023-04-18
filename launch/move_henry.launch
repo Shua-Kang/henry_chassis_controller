@@ -1,0 +1,22 @@
+<launch>
+ 
+    <!-- <node name="map_server" pkg="map_server" type="map_server" args="/home/team8/.ros/my_map.pgm"/> -->
+
+ <!--- Run AMCL 
+    <include file="$(find amcl)/examples/amcl_diff.launch" />--> 
+
+   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+      <!-- <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" /> -->
+      <rosparam file="$(find henry_chassis_controller)/config/costmap_params.yaml" command="load" ns="global_costmap" />
+      <rosparam file="$(find henry_chassis_controller)/config/costmap_params.yaml" command="load" ns="local_costmap" />
+      <rosparam file="$(find henry_chassis_controller)/config/move_base_params.yaml" command="load" />
+      <rosparam file="$(find henry_chassis_controller)/config/local_costmap_params.yaml" command="load" />
+      <rosparam file="$(find henry_chassis_controller)/config/global_costmap_params.yaml" command="load" />
+      <rosparam file="$(find henry_chassis_controller)/config/base_local_planner.yaml" command="load" />
+      <remap from="cmd_vel" to="/chassis/cmd_vel"/>
+      <remap from="odom" to="/t265/odom/sample"/>
+      <!-- <param name="DWAPlannerROS/min_vel_x" value="0.0" if="false" /> -->
+      <remap from="/map" to="rtabmap/grid_map"/>
+   </node>
+
+</launch> 
