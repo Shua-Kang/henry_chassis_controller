@@ -70,22 +70,28 @@ class goal_publisher_node():
         self.e_stop = False
 
         self.initialized = False
-        self.waypoints = [(0,1),(1,1),(2,0)]
+        self.waypoints = [(0.5,0),(0.5,1.5),(3,0)]
         self.current_waypoint = 0
 
-        self.grid_size = 20
+        self.grid_size = 10
         self.adj_list, self.matrix = adjacency_list_creation(self.grid_size, -2.0, 2.0, 0.0, 4.0)
         self.occupied = []
         self.local_goal = (0.0,0.0)
         self.end_goal = (2.0, 0.0)
-        self.planner_enable = False
+        self.planner_enable = True
+
+        # self.obstacle_location = (1.0,0.5)
+        # filled = closest_node(self.adj_list, self.obstacle_location)
+        # for neighbors in self.adj_list[filled]:
+        #     self.occupied.append(neighbors)
+        # self.occupied.append(filled)
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
 
-        goal.target_pose.pose.position.x = self.waypoints[self.current_waypoint[0]]
-        goal.target_pose.pose.position.y = self.waypoints[self.current_waypoint[1]]
+        goal.target_pose.pose.position.x = self.waypoints[self.current_waypoint][0]
+        goal.target_pose.pose.position.y = self.waypoints[self.current_waypoint][1]
 
         x, y, z, w = quaternion_from_euler(0, 0, math.pi)
         goal.target_pose.pose.orientation.x = x
@@ -167,17 +173,20 @@ class goal_publisher_node():
                 self.pub.publish(msg)
                 return
 
-            if (self.planner_enable == False):
-                goal.target_pose.pose.position.x = self.waypoints[self.current_waypoint[0]]
-                goal.target_pose.pose.position.y = self.waypoints[self.current_waypoint[1]]
-            else:
-                goal.target_pose.pose.position.x = self.local_goal[0]
-                goal.target_pose.pose.position.y = self.local_goal[1]
+            
 
             xr, yr = self.current_robot_location
                 
             print("drive to spot")
             goal = MoveBaseGoal()
+
+            if (self.planner_enable == False):
+                goal.target_pose.pose.position.x = self.waypoints[self.current_waypoint][0]
+                goal.target_pose.pose.position.y = self.waypoints[self.current_waypoint][1]
+            else:
+                goal.target_pose.pose.position.x = self.local_goal[0]
+                goal.target_pose.pose.position.y = self.local_goal[1]
+
             goal.target_pose.header.frame_id = "map"
             goal.target_pose.header.stamp = rospy.Time.now()
             x, y, z, w = quaternion_from_euler(0, 0, math.pi)
@@ -186,11 +195,17 @@ class goal_publisher_node():
             goal.target_pose.pose.orientation.z = z
             goal.target_pose.pose.orientation.w = w
 
-            xt = goal.target_pose.pose.position.x
-            yt = goal.target_pose.pose.position.y
+            #xt = goal.target_pose.pose.position.x
+            #yt = goal.target_pose.pose.position.y
+            xt = self.end_goal[0]
+            yt = self.end_goal[1]
+
             distance = np.sqrt(((yt - yr) ** 2) + ((xt - xr) ** 2))
+            print("Before Distance || Gaol; ({} {}) || Cur Pos: ({} {}".format(xt, yt, xr, yr))
             print("Distance: ",distance)
             if distance < 0.3:
+                print("============================")
+                print("Achieve goal Ebd")
                 self.client.cancel_all_goals()
                 msg = Twist()
                 msg.linear.x = 0
@@ -247,7 +262,7 @@ class goal_publisher_node():
             unvisited.remove(current_min_node)
 
         temp = previous_nodes[closest_node(self.adj_list,self.end_goal)]
-        new_path = []
+        new_path = [self.end_goal]
         new_path.append(temp)
         while temp != closest_node(self.adj_list,self.current_robot_location):
             
@@ -261,6 +276,8 @@ class goal_publisher_node():
             self.local_goal = new_path[-1]
             print(new_path[-1])
 
+        print(self.local_goal)
+        print(new_path)
         for i in range(self.grid_size):
                 for j in range(self.grid_size):
                     if self.matrix[i,j] in self.occupied:
@@ -269,6 +286,8 @@ class goal_publisher_node():
                         sys.stdout.write("G")
                     elif self.matrix[i,j] == closest_node(self.adj_list, (self.current_robot_location)):
                         sys.stdout.write("R")
+                    elif self.matrix[i,j] in new_path:
+                        sys.stdout.write("P")
                     else:
                         sys.stdout.write("O")
                 print("")
