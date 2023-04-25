@@ -13,6 +13,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Joy
 from tf.transformations import quaternion_from_euler
+import sys
 
 
 def adjacency_list_creation(size, x_cord_min, x_cord_max, y_cord_min, y_cord_max):
@@ -43,7 +44,7 @@ def adjacency_list_creation(size, x_cord_min, x_cord_max, y_cord_min, y_cord_max
                 adj_list[structure[i,j]].add(structure[i-1,j+1])
             if i - 1 >= (0) and j - 1 >= (0):
                 adj_list[structure[i,j]].add(structure[i-1,j-1])
-    return adj_list
+    return adj_list, structure
 
 def closest_node(adj_list, coordinate):
     coordinate = np.array(coordinate)
@@ -72,7 +73,8 @@ class goal_publisher_node():
         self.waypoints = [(0,1),(1,1),(2,0)]
         self.current_waypoint = 0
 
-        self.adj_list = adjacency_list_creation(20, -2.0, 2.0, 0.0, 4.0)
+        self.grid_size = 20
+        self.adj_list, self.matrix = adjacency_list_creation(self.grid_size, -2.0, 2.0, 0.0, 4.0)
         self.occupied = []
         self.local_goal = (0.0,0.0)
         self.end_goal = (2.0, 0.0)
@@ -258,6 +260,18 @@ class goal_publisher_node():
         else:
             self.local_goal = new_path[-1]
             print(new_path[-1])
+
+        for i in range(self.grid_size):
+                for j in range(self.grid_size):
+                    if self.matrix[i,j] in self.occupied:
+                        sys.stdout.write("X")
+                    elif self.matrix[i,j] == closest_node(self.adj_list, (self.end_goal)):
+                        sys.stdout.write("G")
+                    elif self.matrix[i,j] == closest_node(self.adj_list, (self.current_robot_location)):
+                        sys.stdout.write("R")
+                    else:
+                        sys.stdout.write("O")
+                print("")
 
 
 
