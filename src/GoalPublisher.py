@@ -12,7 +12,7 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Pose, Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Joy
-from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 import sys
 
 
@@ -117,8 +117,7 @@ class goal_publisher_node():
 
     def run(self):
         while not rospy.is_shutdown():
-            while not self.initialized:
-                self.rate.sleep()
+            while not self.initialized:1.5
             if time.time() - self.start > self.wait_time:
                 self.traverse_graph()
                 self.publish_goal()
@@ -213,19 +212,44 @@ class goal_publisher_node():
                 if (self.planner_enable == False) and (self.current_waypoint != len(self.waypoints)):
                     self.current_waypoint += 1
                 return
-            print("===============================", x, y, z, w)
+            # print("===============================", x, y, z, w)
+            #self.client.cancel_all_goals()
+            for i in range(5):
+                print("====== Current Goal: {} {}".format(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y))
             self.client.send_goal(goal)
     
     def robot_odometry_callback(self, msg):
         self.current_robot_location = [msg.pose.pose.position.x, msg.pose.pose.position.y]
+        x = msg.pose.pose.orientation.x 
+        y = msg.pose.pose.orientation.y
+        z = msg.pose.pose.orientation.z
+        w = msg.pose.pose.orientation.w
+        
+        euler_angle = euler_from_quaternion([x, y, z, w])
+        self.yaw = euler_angle[2]
+
 
     def ball_pose(self, msg):
-        self.obstacle_location = [msg.pose.pose.position.x, msg.pose.pose.position.y]
         self.occupied = []
-        filled = closest_node(self.adj_list, self.obstacle_location)
-        for neighbors in self.adj_list[filled]:
-            self.occupied.append(neighbors)
-        self.occupied.append(filled)
+        #print(msg.pose.pose.position.x)
+        if(msg.pose.pose.position.x == -10000):
+            return
+        else:
+            self.obstacle_location = [msg.pose.pose.position.x / 10.0, msg.pose.pose.position.y / 10.0]
+            #print("=============== Ball Location: ", self.obstacle_location)
+            
+            ## orientation
+            #print("================ Ball Location (before): ", self.obstacle_location, " || Self.yaw: ", self.yaw)
+            rotmat = np.array([[np.cos(self.yaw), -np.sin(self.yaw)], [np.sin(self.yaw  ), np.cos(self.yaw)]])
+            self.obstacle_location = np.matmul(rotmat, self.obstacle_location)
+            #print("================ Ball Location (After): ", self.obstacle_location)
+            self.obstacle_location[0] += self.current_robot_location[0]
+            self.obstacle_location[1] += self.current_robot_location[1]
+
+            filled = closest_node(self.adj_list, self.obstacle_location)
+            for neighbors in self.adj_list[filled]:
+                self.occupied.append(neighbors)
+            self.occupied.append(filled)
 
     def traverse_graph(self):
         start_node = closest_node(self.adj_list, self.current_robot_location)
