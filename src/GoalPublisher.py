@@ -36,14 +36,14 @@ def adjacency_list_creation(size, x_cord_min, x_cord_max, y_cord_min, y_cord_max
                 adj_list[structure[i,j]].add(structure[i-1,j])
             if j - 1 >= (0):
                 adj_list[structure[i,j]].add(structure[i,j-1])
-            if i + 1 < (size) and j + 1 < (size):
-                adj_list[structure[i,j]].add(structure[i+1,j+1])
-            if i + 1 < (size) and j - 1 >= (0):
-                adj_list[structure[i,j]].add(structure[i+1,j-1])
-            if i - 1 >= (0) and j + 1 < (size):
-                adj_list[structure[i,j]].add(structure[i-1,j+1])
-            if i - 1 >= (0) and j - 1 >= (0):
-                adj_list[structure[i,j]].add(structure[i-1,j-1])
+            # if i + 1 < (size) and j + 1 < (size):
+            #     adj_list[structure[i,j]].add(structure[i+1,j+1])
+            # if i + 1 < (size) and j - 1 >= (0):
+            #     adj_list[structure[i,j]].add(structure[i+1,j-1])
+            # if i - 1 >= (0) and j + 1 < (size):
+            #     adj_list[structure[i,j]].add(structure[i-1,j+1])
+            # if i - 1 >= (0) and j - 1 >= (0):
+            #     adj_list[structure[i,j]].add(structure[i-1,j-1])
     return adj_list, structure
 
 def closest_node(adj_list, coordinate):
@@ -70,21 +70,20 @@ class goal_publisher_node():
         self.e_stop = False
 
         self.initialized = False
-        self.waypoints = [(0.5,0),(0.5,1.5),(3,0)]
+        self.waypoints = [(0.5,0),(1.5,0.0),(2.0,0)]
         self.current_waypoint = 0
 
-        self.grid_size = 10
+        self.grid_size = 7
         self.adj_list, self.matrix = adjacency_list_creation(self.grid_size, -2.0, 2.0, 0.0, 4.0)
         self.occupied = []
         self.local_goal = (0.0,0.0)
         self.end_goal = (2.0, 0.0)
         self.planner_enable = True
 
-        # self.obstacle_location = (1.0,0.5)
-        # filled = closest_node(self.adj_list, self.obstacle_location)
-        # for neighbors in self.adj_list[filled]:
-        #     self.occupied.append(neighbors)
-        # self.occupied.append(filled)
+        self.obstacle_location = (1.0,0.0)
+        filled = closest_node(self.adj_list, self.obstacle_location)
+      
+        self.occupied.append(filled)
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
@@ -195,10 +194,10 @@ class goal_publisher_node():
             goal.target_pose.pose.orientation.z = z
             goal.target_pose.pose.orientation.w = w
 
-            #xt = goal.target_pose.pose.position.x
-            #yt = goal.target_pose.pose.position.y
-            xt = self.end_goal[0]
-            yt = self.end_goal[1]
+            xt = goal.target_pose.pose.position.x
+            yt = goal.target_pose.pose.position.y
+            # xt = self.end_goal[0]
+            # yt = self.end_goal[1]
 
             distance = np.sqrt(((yt - yr) ** 2) + ((xt - xr) ** 2))
             print("Before Distance || Gaol; ({} {}) || Cur Pos: ({} {}".format(xt, yt, xr, yr))
@@ -260,37 +259,39 @@ class goal_publisher_node():
                     previous_nodes[neighbor] = current_min_node
 
             unvisited.remove(current_min_node)
-
-        temp = previous_nodes[closest_node(self.adj_list,self.end_goal)]
-        new_path = [self.end_goal]
-        new_path.append(temp)
-        while temp != closest_node(self.adj_list,self.current_robot_location):
-            
-            temp = previous_nodes[temp]
-            new_path.append(temp)
-
-        if (len(new_path) > 1):
-            self.local_goal = new_path[-2]
-            print(new_path[-2])
+        if shortest_path[closest_node(self.adj_list,self.end_goal)] == 0:
+            self.local_goal = self.end_goal
         else:
-            self.local_goal = new_path[-1]
-            print(new_path[-1])
+            temp = previous_nodes[closest_node(self.adj_list,self.end_goal)]
+            new_path = [self.end_goal]
+            new_path.append(temp)
+            while temp != closest_node(self.adj_list,self.current_robot_location):
+                
+                temp = previous_nodes[temp]
+                new_path.append(temp)
 
-        print(self.local_goal)
-        print(new_path)
-        for i in range(self.grid_size):
-                for j in range(self.grid_size):
-                    if self.matrix[i,j] in self.occupied:
-                        sys.stdout.write("X")
-                    elif self.matrix[i,j] == closest_node(self.adj_list, (self.end_goal)):
-                        sys.stdout.write("G")
-                    elif self.matrix[i,j] == closest_node(self.adj_list, (self.current_robot_location)):
-                        sys.stdout.write("R")
-                    elif self.matrix[i,j] in new_path:
-                        sys.stdout.write("P")
-                    else:
-                        sys.stdout.write("O")
-                print("")
+            if (len(new_path) > 1):
+                self.local_goal = new_path[-2]
+                print(new_path[-2])
+            else:
+                self.local_goal = new_path[-1]
+                print(new_path[-1])
+
+            print(self.local_goal)
+            print(new_path)
+            for i in range(self.grid_size):
+                    for j in range(self.grid_size):
+                        if self.matrix[i,j] in self.occupied:
+                            sys.stdout.write("X")
+                        elif self.matrix[i,j] == closest_node(self.adj_list, (self.end_goal)):
+                            sys.stdout.write("G")
+                        elif self.matrix[i,j] == closest_node(self.adj_list, (self.current_robot_location)):
+                            sys.stdout.write("R")
+                        elif self.matrix[i,j] in new_path:
+                            sys.stdout.write("P")
+                        else:
+                            sys.stdout.write("O")
+                    print("")
 
 
 
