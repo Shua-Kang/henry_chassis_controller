@@ -36,14 +36,14 @@ def adjacency_list_creation(size, x_cord_min, x_cord_max, y_cord_min, y_cord_max
                 adj_list[structure[i,j]].add(structure[i-1,j])
             if j - 1 >= (0):
                 adj_list[structure[i,j]].add(structure[i,j-1])
-            # if i + 1 < (size) and j + 1 < (size):
-            #     adj_list[structure[i,j]].add(structure[i+1,j+1])
-            # if i + 1 < (size) and j - 1 >= (0):
-            #     adj_list[structure[i,j]].add(structure[i+1,j-1])
-            # if i - 1 >= (0) and j + 1 < (size):
-            #     adj_list[structure[i,j]].add(structure[i-1,j+1])
-            # if i - 1 >= (0) and j - 1 >= (0):
-            #     adj_list[structure[i,j]].add(structure[i-1,j-1])
+            if i + 1 < (size) and j + 1 < (size):
+                adj_list[structure[i,j]].add(structure[i+1,j+1])
+            if i + 1 < (size) and j - 1 >= (0):
+                adj_list[structure[i,j]].add(structure[i+1,j-1])
+            if i - 1 >= (0) and j + 1 < (size):
+                adj_list[structure[i,j]].add(structure[i-1,j+1])
+            if i - 1 >= (0) and j - 1 >= (0):
+                adj_list[structure[i,j]].add(structure[i-1,j-1])
     return adj_list, structure
 
 def closest_node(adj_list, coordinate):
@@ -81,9 +81,9 @@ class goal_publisher_node():
         self.planner_enable = True
 
         self.obstacle_location = (1.0,0.0)
-        filled = closest_node(self.adj_list, self.obstacle_location)
+        # filled = closest_node(self.adj_list, self.obstacle_location)
       
-        self.occupied.append(filled)
+        # self.occupied.append(filled)
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
@@ -102,7 +102,7 @@ class goal_publisher_node():
         self.obstacle_location = []
 
         self.ego_odom_topic = "/t265/odom/sample"
-        self.pose_covariance_topic = "/pose_covariance"
+        self.pose_covariance_topic = "/pose_corrected"
         self.joy_topic = "/joy"
     
         rospy.Subscriber(self.ego_odom_topic, Odometry, self.robot_odometry_callback)
@@ -231,25 +231,24 @@ class goal_publisher_node():
 
     def ball_pose(self, msg):
         self.occupied = []
-        #print(msg.pose.pose.position.x)
-        if(msg.pose.pose.position.x == -10000):
-            return
-        else:
-            self.obstacle_location = [msg.pose.pose.position.x / 10.0, msg.pose.pose.position.y / 10.0]
-            #print("=============== Ball Location: ", self.obstacle_location)
-            
-            ## orientation
-            #print("================ Ball Location (before): ", self.obstacle_location, " || Self.yaw: ", self.yaw)
-            rotmat = np.array([[np.cos(self.yaw), -np.sin(self.yaw)], [np.sin(self.yaw  ), np.cos(self.yaw)]])
-            self.obstacle_location = np.matmul(rotmat, self.obstacle_location)
-            #print("================ Ball Location (After): ", self.obstacle_location)
-            self.obstacle_location[0] += self.current_robot_location[0]
-            self.obstacle_location[1] += self.current_robot_location[1]
+        # #print(msg.pose.pose.position.x)
+        # if(msg.pose.pose.position.x == -10000):
+        #     return
+        # else:
+        self.obstacle_location = [msg.pose.pose.position.y / 10.0, msg.pose.pose.position.x / 10.0]
+        #print("=============== Ball Location: ", self.obstacle_location)
+        
+        ## orientation
+        #print("================ Ball Location (before): ", self.obstacle_location, " || Self.yaw: ", self.yaw)
+        rotmat = np.array([[np.cos(self.yaw), -np.sin(self.yaw)], [np.sin(self.yaw  ), np.cos(self.yaw)]])
+        self.obstacle_location = np.matmul(rotmat, self.obstacle_location)
+        #print("================ Ball Location (After): ", self.obstacle_location)
+        self.obstacle_location[0] += self.current_robot_location[0]
+        self.obstacle_location[1] += self.current_robot_location[1]
+        #print("================ Ball Location (After2): ", self.obstacle_location)
 
-            filled = closest_node(self.adj_list, self.obstacle_location)
-            for neighbors in self.adj_list[filled]:
-                self.occupied.append(neighbors)
-            self.occupied.append(filled)
+        filled = closest_node(self.adj_list, self.obstacle_location)
+        self.occupied.append(filled)
 
     def traverse_graph(self):
         start_node = closest_node(self.adj_list, self.current_robot_location)
